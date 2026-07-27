@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Spirograph</title>
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" type="image/svg+xml" href="fav.svg">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    html, body {
+      background: #0a0a0a;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Segoe UI', Roboto, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      touch-action: none;
+      -webkit-tap-highlight-color: transparent;
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+    }
+    
+    #main-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      padding: 20px;
+      gap: 8px;
+    }
+    
+    .title-bar {
+      text-align: center;
+      flex-shrink: 0;
+      padding: 2px 0;
+      width: 100%;
+    }
+    .title-bar .title {
+      font-size: 22px;
+      font-weight: 300;
+      letter-spacing: 8px;
+      color: rgba(255,255,255,0.85);
+      text-transform: uppercase;
+    }
+    .title-bar .title .accent {
+      color: #c9a84c;
+      font-weight: 400;
+    }
+    
+    #canvas-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      min-height: 0;
+      padding: 0 10px;
+      position: relative;
+    }
+    
+    #canvas-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+      box-shadow: 0 0 80px rgba(0,0,0,0.9);
+      border-radius: 2px;
+      overflow: hidden;
+      position: relative;
+      background: #0a0a0a;
+    }
+    
+    #canvas-wrapper canvas {
+      display: block !important;
+      max-width: 100%;
+      max-height: 100%;
+      width: auto !important;
+      height: auto !important;
+      object-fit: contain;
+      border-radius: 2px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1;
+    }
+    
+    #shirt-mockup {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      border-radius: 2px;
+      box-shadow: 0 0 80px rgba(0,0,0,0.9);
+      z-index: 2;
+    }
+    #shirt-mockup.active {
+      display: block !important;
+      animation: fadeIn 0.6s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+      to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+    
+    .bottom-bar {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      gap: 6px;
+      padding: 4px 0;
+    }
+    
+    .controls-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .controls {
+      color: rgba(255,255,255,0.7);
+      background: rgba(255,255,255,0.04);
+      padding: 8px 20px;
+      border-radius: 30px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Segoe UI', Roboto, Arial, sans-serif;
+      font-size: 11px;
+      font-weight: 400;
+      border: 1px solid rgba(255,255,255,0.08);
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      transition: all 0.3s ease;
+      letter-spacing: 0.8px;
+      touch-action: manipulation;
+      min-height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .controls:hover {
+      color: rgba(255,255,255,0.95);
+      border-color: rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08);
+    }
+    .controls:active {
+      transform: scale(0.95);
+    }
+    .controls .key {
+      color: rgba(255,255,255,0.5);
+      font-weight: 300;
+    }
+    .controls .sep {
+      color: rgba(255,255,255,0.15);
+      margin: 0 4px;
+    }
+    
+    .controls.shirt-btn {
+      border-color: rgba(201, 168, 76, 0.2);
+      color: rgba(201, 168, 76, 0.7);
+      letter-spacing: 1px;
+    }
+    .controls.shirt-btn:hover {
+      border-color: rgba(201, 168, 76, 0.4);
+      color: #c9a84c;
+      background: rgba(201, 168, 76, 0.06);
+    }
+    .controls.shirt-btn.active {
+      border-color: rgba(201, 168, 76, 0.5);
+      color: #c9a84c;
+      background: rgba(201, 168, 76, 0.08);
+    }
+    .controls.shirt-btn .icon {
+      font-size: 14px;
+      line-height: 1;
+    }
+    
+    .info-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 14px;
+      color: rgba(255,255,255,0.3);
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+      font-size: 9px;
+      letter-spacing: 0.5px;
+      flex-wrap: wrap;
+      padding: 2px 0;
+    }
+    .info-row .info-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.04);
+      background: rgba(255,255,255,0.02);
+    }
+    .info-row .label {
+      color: rgba(255,255,255,0.25);
+      font-weight: 300;
+    }
+    .info-row .value {
+      color: rgba(255,255,255,0.6);
+      font-weight: 400;
+    }
+    
+    .description {
+      display: block;
+      text-align: center;
+      color: rgba(255,255,255,0.25);
+      font-size: 8px;
+      letter-spacing: 1.2px;
+      line-height: 1.8;
+      padding: 2px 10px;
+      font-weight: 300;
+      max-width: 500px;
+      width: 100%;
+      text-transform: uppercase;
+    }
+    .description .highlight {
+      color: rgba(255,255,255,0.4);
+    }
+    .description .sep {
+      color: rgba(255,255,255,0.08);
+      margin: 0 4px;
+    }
+    
+    @media (max-width: 1024px) {
+      #main-container { padding: 16px; gap: 6px; }
+      .title-bar .title { font-size: 20px; letter-spacing: 6px; }
+      .controls { font-size: 10px; padding: 7px 16px; min-height: 34px; }
+      .info-row { font-size: 8.5px; gap: 12px; }
+      .info-row .info-item { padding: 2px 10px; }
+      .description { font-size: 7.5px; letter-spacing: 1px; }
+    }
+    
+    @media (max-width: 768px) {
+      #main-container { padding: 12px; gap: 5px; }
+      .title-bar .title { font-size: 17px; letter-spacing: 5px; }
+      #canvas-container { padding: 0 6px; }
+      .controls { font-size: 9px; padding: 6px 14px; min-height: 32px; letter-spacing: 0.6px; }
+      .controls-row { gap: 6px; }
+      .info-row { font-size: 8px; gap: 10px; }
+      .info-row .info-item { padding: 2px 8px; }
+      .description { font-size: 7px; letter-spacing: 0.8px; padding: 2px 6px; }
+      .controls.shirt-btn .icon { font-size: 12px; }
+    }
+    
+    @media (max-width: 480px) {
+      #main-container { padding: 8px; gap: 4px; }
+      .title-bar .title { font-size: 14px; letter-spacing: 4px; }
+      #canvas-container { padding: 0 4px; }
+      .controls { font-size: 8px; padding: 5px 12px; min-height: 28px; border-radius: 24px; letter-spacing: 0.4px; }
+      .controls-row { gap: 4px; }
+      .info-row { font-size: 7px; gap: 8px; }
+      .info-row .info-item { padding: 2px 6px; gap: 4px; }
+      .description { font-size: 6.5px; letter-spacing: 0.6px; padding: 2px 4px; line-height: 1.6; }
+      .controls.shirt-btn .icon { font-size: 11px; }
+    }
+    
+    @media (max-width: 380px) {
+      #main-container { padding: 6px; gap: 3px; }
+      .title-bar .title { font-size: 12px; letter-spacing: 3px; }
+      #canvas-container { padding: 0 2px; }
+      .controls { font-size: 7px; padding: 4px 10px; min-height: 26px; border-radius: 20px; }
+      .info-row { font-size: 6.5px; gap: 6px; }
+      .info-row .info-item { padding: 1px 5px; border-radius: 14px; }
+      .description { font-size: 6px; letter-spacing: 0.5px; padding: 1px 3px; }
+      .controls.shirt-btn .icon { font-size: 10px; }
+    }
+    
+    @media (orientation: landscape) and (max-height: 500px) {
+      #main-container { padding: 10px 20px; gap: 4px; flex-direction: row; flex-wrap: wrap; }
+      .title-bar { width: 100%; flex-shrink: 0; }
+      .title-bar .title { font-size: 16px; letter-spacing: 4px; }
+      #canvas-container { flex: 1; min-height: 0; height: 100%; padding: 0 8px; }
+      .bottom-bar { width: auto; max-width: 180px; flex-shrink: 0; gap: 4px; padding: 0 4px; }
+      .controls { font-size: 8px; padding: 5px 12px; min-height: 28px; letter-spacing: 0.4px; }
+      .controls-row { flex-direction: column; gap: 4px; }
+      .info-row { font-size: 7px; gap: 6px; flex-direction: column; align-items: stretch; }
+      .info-row .info-item { padding: 2px 8px; justify-content: center; }
+      .description { font-size: 6px; max-width: 160px; padding: 1px 4px; line-height: 1.4; letter-spacing: 0.5px; }
+    }
+    
+    @media (orientation: landscape) and (max-height: 380px) {
+      #main-container { padding: 6px 12px; gap: 3px; }
+      .title-bar .title { font-size: 13px; letter-spacing: 3px; }
+      #canvas-container { padding: 0 4px; }
+      .bottom-bar { max-width: 140px; gap: 3px; }
+      .controls { font-size: 7px; padding: 4px 10px; min-height: 24px; border-radius: 16px; }
+      .info-row { font-size: 6px; gap: 4px; }
+      .info-row .info-item { padding: 1px 6px; }
+      .description { font-size: 5.5px; max-width: 120px; padding: 1px 3px; }
+    }
+    
+    @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+      #canvas-wrapper canvas { image-rendering: auto; }
+    }
+    
+    @supports (-webkit-touch-callout: none) {
+      .controls { min-height: 40px; }
+    }
+    
+    @media (prefers-reduced-motion: reduce) {
+      .controls, #canvas-wrapper canvas, #shirt-mockup { transition: none; }
+      #shirt-mockup.active { animation: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- MAIN CONTAINER -->
+<div id="main-container">
+
+  <div class="title-bar">
+    <div class="title"><span class="accent">Spiro</span>graph</div>
+  </div>
+
+  <div id="canvas-container">
+    <div id="canvas-wrapper">
+      <img id="shirt-mockup" src="Spirograph.jpg" alt="Spirograph on T-Shirt" />
+    </div>
+  </div>
+
+  <div class="bottom-bar">
+
+    <div class="controls-row">
+      <div class="controls" id="controlsBar">
+        <span class="key">●</span> regenerate <span class="sep">—</span> <span class="key">S</span> save
+      </div>
+      <div class="controls shirt-btn" id="shirtToggle">
+        <span class="icon">◷</span> apparel
+      </div>
+    </div>
+
+    <div class="info-row">
+      <div class="info-item">
+        <span class="label">links</span>
+        <span class="value" id="linksDisplay">---</span>
+      </div>
+      <div class="info-item">
+        <span class="label">speed 1</span>
+        <span class="value" id="speed1Display">---</span>
+      </div>
+      <div class="info-item">
+        <span class="label">speed 2</span>
+        <span class="value" id="speed2Display">---</span>
+      </div>
+    </div>
+
+    <div class="description">
+      <span class="highlight">spirograph</span>
+      <span class="sep">·</span>
+      <span class="highlight">2 linked arms</span>
+      <span class="sep">·</span>
+      <span class="highlight">generative art</span>
+      <span class="sep">·</span>
+      <span class="highlight">continuous drawing</span>
+    </div>
+
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<script>
+// ============================================
+// SPIROGRAPH — ORIGINAL P5.JS ART
+// ============================================
+
+let p5Instance = null;
+let showingShirt = false;
+let angle = 0;
+let angleCoeff = [];
+const angleVel = 3 / 1000;
+const NumberOflinks = 2;
+let Link = [];
+let Path = [];
+let features = {};
+let v1, v2;
+
+// Random utility
+let seed = Math.random() * 2147483647;
+
+function random() {
+    seed = (seed * 9301 + 49297) % 233280;
+    return seed / 233280;
+}
+
+function getRandomInt(min, max) {
+  return Math.floor(random() * (max - min + 1)) + min;
+}
+
+// ============================================
+// P5.JS SETUP
+// ============================================
+function p5Setup(p) {
+  const wrapper = document.getElementById('canvas-wrapper');
+  const rect = wrapper.getBoundingClientRect();
+  const size = Math.min(rect.width, rect.height);
+  
+  p.createCanvas(size, size);
+  p.frameRate(60);
+  
+  const canvasEl = p.canvas;
+  canvasEl.style.display = 'block';
+  canvasEl.style.position = 'absolute';
+  canvasEl.style.top = '50%';
+  canvasEl.style.left = '50%';
+  canvasEl.style.transform = 'translate(-50%, -50%)';
+  canvasEl.style.zIndex = '1';
+  canvasEl.style.maxWidth = '100%';
+  canvasEl.style.maxHeight = '100%';
+  canvasEl.style.width = 'auto';
+  canvasEl.style.height = 'auto';
+
+  const Backgroundcolors = [
+    '#34282C','#3B3131','#0C090A','#36454F','#151B54',
+    '#045F5F','#045D5D','#033E3E','#25383C','#2C3539',
+    '#1F6357','#555D50','#254117','#004225','#665D1E',
+    '#483C32','#4A412A','#473810','#493D26','#513B1C',
+    '#3D3635','#3B2F2F','#43302E','#622F22','#5C3317',
+    '#7E3517','#800000','#660000','#551606','#3F000F',
+    '#3D0C02','#2F0909','#2B1B17','#550A35','#614051',
+    '#583759','#4E5180','#483D8B','#4B0150','#36013F',
+    '#2E1A47'
+  ];
+  const BackgroundIndex1 = Math.floor(random() * Backgroundcolors.length);
+  const BackgroundIndex2 = Math.floor(random() * Backgroundcolors.length);
+
+  const Foregroundcolors = [
+    '#736F6E','#888B90','#99A3A3','#B6B6B4','#C9C1C1',
+    '#D1D0CE','#DADBDD','#F5F5F5','#BCC6CC','#98AFC7',
+    '#728FCE','#2916F5','#1974D2','#1589FF','#14A3C7',
+    '#659EC7','#87AFC7','#95B9C7','#3BB9FF','#79BAEC',
+    '#A0CFEC','#B4CFEC','#C2DFFF','#AFDCEC','#C9DFEC',
+    '#EBF4FA','#F0FFFF','#CCFFFF','#9AFEFF','#57FEFF',
+    '#4EE2EC','#8EEBEC','#CFECEC','#B3D9D9','#81D8D0',
+    '#7BCCB5','#66CDAA','#93E9BE','#AAF0D1','#01F9C6',
+    '#40E0D0','#46C7C7','#20B2AA','#00A36C','#3EB489',
+    '#50C878','#7C9D8E','#78866B','#728C00','#6B8E23',
+    '#808000','#08A04B','#6AA121','#8A9A5B','#4AA02C',
+    '#12AD2B','#73A16C','#6CBB3C','#4CC417','#54C571',
+    '#89C35C','#99C68E','#A0D6B4','#8FBC8F','#829F82',
+    '#A2AD9C','#B8BC86','#9CB071','#8FB31D','#B0BF1A',
+    '#77DD77','#5EFB6E','#00FA9A','#12E193','#00FF00',
+    '#ADF802','#DAEE01','#CCFB5D','#90EE90','#E3F9A6',
+    '#DBF9DB','#E8F1D4','#F5FFFA','#FFFFC2','#FFFDD0',
+    '#F5F5DC','#FFF8DC','#F7E7CE','#F5DEB3','#FED8B1',
+    '#FBD5AB','#FBE7A1','#E8E4C9','#F0E68C','#FFE87C',
+    '#FFFF33','#F5E216','#FFCE44','#FBB917','#FBB117',
+    '#FFA500','#EE9A4D','#E2A76F','#C19A6B','#E6BF83',
+    '#C2B280','#C8B560','#C7A317','#E1AD01','#CD853F',
+    '#CA762B','#B87333','#966F33','#806517','#8E7618',
+    '#8A865D','#93917C','#AF9B60','#A0522D','#B83C08',
+    '#EB5406','#C36241','#E56717','#FF5F1F','#FF7F50',
+    '#FF8674','#F75D59','#FD1C03','#E41B17','#7F525D',
+    '#FA2A55','#DA70D6','#5865F2','#C8C4DF'
+  ];
+  const ForegroundIndex = Math.floor(random() * Foregroundcolors.length);
+
+  features.backgroundColour1 = Backgroundcolors[BackgroundIndex1];
+  features.backgroundColour2 = Backgroundcolors[BackgroundIndex2];
+  features.foregroundColour = Foregroundcolors[ForegroundIndex];
+
+  const NumberOfDevition = getRandomInt(NumberOflinks, 10 * NumberOflinks);
+  const linklenght = multiplyVector(generateRandomSumVector(NumberOflinks, NumberOfDevition), size / ((NumberOfDevition + 1) * 2));
+
+  v1 = getRandomInt(1, 10) / 10;
+  v2 = getRandomInt(1, 10) / 10;
+  if (v1 == v2) { v2 += 0.1 }
+  
+  angleCoeff = [v1, v2];
+
+  Link = [];
+  for (let i = 0; i < NumberOflinks; i++) {
+    Link.push({
+      Lenght: linklenght[i],
+      Speed: angleCoeff[i] * (random() < 0.5 ? -1 : 1),
+      initialRatio: random() * 2 * Math.PI,
+      x: [],
+      y: []
+    });
+  }
+
+  Path = [{ path: [] }];
+
+  // Update info display
+  document.getElementById('linksDisplay').textContent = NumberOflinks;
+  document.getElementById('speed1Display').textContent = v1.toFixed(1);
+  document.getElementById('speed2Display').textContent = v2.toFixed(1);
+
+  // Reset angle
+  angle = 0;
+}
+
+// ============================================
+// P5.JS DRAW FUNCTIONS
+// ============================================
+function diagonalGradientRect(p, x, y, w, h, c1, c2) {
+  let C1 = p.color(c1);
+  let C2 = p.color(c2);
+
+  let maxDist = p.dist(0, 0, w, h);
+
+  for (let i = 0; i <= w; i += w / 20) {
+    for (let j = 0; j <= h; j += h / 20) {
+      let distToStart = p.dist(i, j, 0, 0);
+      let inter = maxDist !== 0 ? p.map(distToStart, 0, maxDist, 0, 1) : 0;
+      let c = p.lerpColor(C1, C2, inter);
+      p.stroke(c);
+      p.fill(c);
+      p.rect(x + i, y + j, w / 20, h / 20);
+    }
+  }
+}
+
+function multiplyVector(vector, number) {
+  return vector.map(element => element * number);
+}
+
+function generateRandomSumVector(m, n) {
+  if (m <= 0 || n <= 0) {
+    throw new Error('Both m and n must be positive integers.');
+  }
+  if (n < m) {
+    throw new Error('n must be greater than or equal to m to ensure no zero values.');
+  }
+
+  let result = new Array(m).fill(1);
+  n -= m;
+
+  for (let i = 0; i < n; i++) {
+    result[getRandomInt(0, m - 1)]++;
+  }
+
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+
+  return result;
+}
+
+function drawShapeWithGradientStroke(p, color1hex, color2hex, path, weight) {
+  const C1 = p.color(color1hex);
+  const C2 = p.color(color2hex);
+
+  p.noFill();
+  p.strokeWeight(weight);
+
+  for (let i = 0; i < path.length - 1; i++) {
+    let inter = p.map(i, 0, path.length - 2, 0, 1);
+    let gradientColor = p.lerpColor(C1, C2, inter);
+
+    p.stroke(gradientColor);
+    p.line(path[i].x, path[i].y, path[i + 1].x, path[i + 1].y);
+  }
+}
+
+function drawShapeWithSolidStroke(p, colorHex, path, weight) {
+  const C = p.color(colorHex);
+
+  p.noFill();
+  p.strokeWeight(weight);
+  p.stroke(C);
+
+  for (let i = 0; i < path.length - 1; i++) {
+    p.line(path[i].x, path[i].y, path[i + 1].x, path[i + 1].y);
+  }
+}
+
+// ============================================
+// P5.JS DRAW
+// ============================================
+function p5Draw(p) {
+  const size = p.width;
+  
+  if (angle <= 3 / 1000) {
+    diagonalGradientRect(p, 0, 0, size, size, features.backgroundColour1, features.backgroundColour2);
+    p.translate(size / 2, size / 2);
+    for (let t = 0; t <= 10; t += 1 / 1000) {
+      for (let i = 0; i < NumberOflinks; i++) {
+        if (i === 0) {
+          Link[i].x = Link[i].Lenght * Math.sin(Link[i].Speed * 2 * Math.PI * t + Link[i].initialRatio);
+          Link[i].y = Link[i].Lenght * Math.cos(Link[i].Speed * 2 * Math.PI * t + Link[i].initialRatio);
+        } else {
+          Link[i].x = Link[i - 1].x + Link[i].Lenght * Math.sin(Link[i].Speed * 2 * Math.PI * t + Link[i].initialRatio);
+          Link[i].y = Link[i - 1].y + Link[i].Lenght * Math.cos(Link[i].Speed * 2 * Math.PI * t + Link[i].initialRatio);
+        }
+      }
+      Path[0].path.push({ x: Link[NumberOflinks - 1].x, y: Link[NumberOflinks - 1].y });
+    }
+
+    p.drawingContext.shadowColor = 'black';
+    p.drawingContext.shadowBlur = size / 50;
+    drawShapeWithSolidStroke(p, features.foregroundColour, Path[0].path, size / 400);
+    p.resetMatrix();
+  } else if (angle === 6 / 1000) {
+    Path[0].path = [];
+  } else {
+    diagonalGradientRect(p, 0, 0, size, size, features.backgroundColour1, features.backgroundColour2);
+    p.translate(size / 2, size / 2);
+    for (let i = 0; i < NumberOflinks; i++) {
+      if (i === 0) {
+        Link[i].x = Link[i].Lenght * Math.sin(Link[i].Speed * 2 * Math.PI * angle + Link[i].initialRatio);
+        Link[i].y = Link[i].Lenght * Math.cos(Link[i].Speed * 2 * Math.PI * angle + Link[i].initialRatio);
+      } else {
+        Link[i].x = Link[i - 1].x + Link[i].Lenght * Math.sin(Link[i].Speed * 2 * Math.PI * angle + Link[i].initialRatio);
+        Link[i].y = Link[i - 1].y + Link[i].Lenght * Math.cos(Link[i].Speed * 2 * Math.PI * angle + Link[i].initialRatio);
+      }
+    }
+    Path[0].path.push({ x: Link[NumberOflinks - 1].x, y: Link[NumberOflinks - 1].y });
+    p.drawingContext.shadowColor = 'black';
+    p.drawingContext.shadowBlur = size / 50;
+    drawShapeWithGradientStroke(p, features.backgroundColour1, features.foregroundColour, Path[0].path, size / 400);
+
+    p.beginShape();
+    p.drawingContext.shadowColor = [];
+    p.drawingContext.shadowBlur = 0;
+    p.stroke(0);
+    p.strokeWeight(size / 400);
+    p.line(0, 0, Link[0].x, Link[0].y);
+    p.line(Link[0].x, Link[0].y, Link[1].x, Link[1].y);
+    p.endShape();
+
+    p.beginShape();
+    p.fill(100);
+    p.strokeWeight(size / 1000);
+    p.ellipse(0, 0, size / 200, size / 200);
+    p.ellipse(Link[0].x, Link[0].y, size / 200, size / 200);
+    p.endShape();
+
+    p.noStroke();
+    p.fill(features.foregroundColour);
+    p.ellipse(Link[1].x, Link[1].y, size / 300, size / 300);
+    p.resetMatrix();
+  }
+  angle += angleVel;
+}
+
+// ============================================
+// CREATE P5 INSTANCE
+// ============================================
+function createP5Instance() {
+  if (p5Instance) {
+    p5Instance.remove();
+    p5Instance = null;
+  }
+  
+  const sketch = function(p) {
+    p.setup = function() {
+      p5Setup(p);
+    };
+    
+    p.draw = function() {
+      p5Draw(p);
+    };
+    
+    p.keyPressed = function() {
+      if (p.key === 's' || p.key === 'S') {
+        p.saveGif('Spirograph', 30);
+      }
+    };
+  };
+  
+  p5Instance = new p5(sketch, 'canvas-wrapper');
+}
+
+// ============================================
+// UI CONTROLS
+// ============================================
+function regenerate() {
+  const shirtMockup = document.getElementById('shirt-mockup');
+  shirtMockup.classList.remove('active');
+  showingShirt = false;
+  const shirtToggle = document.getElementById('shirtToggle');
+  shirtToggle.classList.remove('active');
+  shirtToggle.innerHTML = '<span class="icon">◷</span> apparel';
+  
+  // Remove canvas
+  const wrapper = document.getElementById('canvas-wrapper');
+  const canvases = wrapper.getElementsByTagName('canvas');
+  Array.from(canvases).forEach(c => c.remove());
+  
+  // Reset state
+  angle = 0;
+  Link = [];
+  Path = [];
+  
+  // Create new p5 instance
+  createP5Instance();
+}
+
+function downloadCanvas() {
+  if (showingShirt) {
+    const link = document.createElement('a');
+    link.download = 'Spirograph_Shirt.png';
+    const img = document.getElementById('shirt-mockup');
+    if (img && img.src) {
+      link.href = img.src;
+    }
+    link.click();
+    return;
+  }
+  
+  const canvas = document.querySelector('#canvas-wrapper canvas');
+  if (!canvas) return;
+  const link = document.createElement('a');
+  const hash = Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
+  link.download = 'Spirograph_' + hash + '.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+function toggleShirt() {
+  showingShirt = !showingShirt;
+  const canvas = document.querySelector('#canvas-wrapper canvas');
+  const shirtMockup = document.getElementById('shirt-mockup');
+  const shirtToggle = document.getElementById('shirtToggle');
+  
+  if (showingShirt) {
+    if (canvas) canvas.style.display = 'none';
+    shirtMockup.classList.add('active');
+    shirtToggle.classList.add('active');
+    shirtToggle.innerHTML = '<span class="icon">◷</span> artwork';
+  } else {
+    if (canvas) canvas.style.display = 'block';
+    shirtMockup.classList.remove('active');
+    shirtToggle.classList.remove('active');
+    shirtToggle.innerHTML = '<span class="icon">◷</span> apparel';
+  }
+}
+
+// ============================================
+// RESIZE HANDLER
+// ============================================
+let resizeTmr = null;
+
+function handleResize() {
+  clearTimeout(resizeTmr);
+  resizeTmr = setTimeout(() => {
+    regenerate();
+  }, 300);
+}
+
+// ============================================
+// INIT
+// ============================================
+function init() {
+  createP5Instance();
+  
+  window.addEventListener('resize', handleResize);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 's' || e.key === 'S') {
+      e.preventDefault();
+      downloadCanvas();
+    }
+    if (e.key === 'r' || e.key === 'R') {
+      e.preventDefault();
+      regenerate();
+    }
+    if (e.key === 't' || e.key === 'T') {
+      e.preventDefault();
+      toggleShirt();
+    }
+    if (e.key === ' ' || e.key === 'Space') {
+      e.preventDefault();
+      regenerate();
+    }
+  });
+
+  document.getElementById('controlsBar').addEventListener('click', regenerate);
+  document.getElementById('controlsBar').addEventListener('touchend', function(e) {
+    e.preventDefault();
+    regenerate();
+  });
+
+  document.getElementById('shirtToggle').addEventListener('click', toggleShirt);
+  document.getElementById('shirtToggle').addEventListener('touchend', function(e) {
+    e.preventDefault();
+    toggleShirt();
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+
+window.regenerate = regenerate;
+window.saveImage = downloadCanvas;
+window.toggleShirt = toggleShirt;
+</script>
+</body>
+</html>
